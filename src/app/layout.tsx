@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+// Import Shippori Mincho font
+import { Shippori_Mincho } from "next/font/google";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -10,6 +13,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const shipporiMincho = Shippori_Mincho({
+  weight: "700", // Use the bold weight as in the wireframe
+  subsets: ["latin"],
+  variable: "--font-shippori-mincho",
 });
 
 export const metadata: Metadata = {
@@ -23,12 +32,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+    <html lang="ja">
+      <head><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" /><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700&display=swap" rel="stylesheet" /></head>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} antialiased`}>{children}</body>
     </html>
   );
 }
