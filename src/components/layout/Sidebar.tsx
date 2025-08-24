@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 import CreateFolderModal from '../CreateFolderModal';
 
-export default function Sidebar() {
+export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; setIsSidebarOpen: (isOpen: boolean) => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -46,7 +46,11 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col">
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:relative md:translate-x-0 md:flex`} // Hide on mobile by default, show on md and up
+    >
       <div className="h-16 flex items-center px-4 border-b border-slate-200">
         <Link href="/dashboard" className="text-xl font-bold text-slate-800">ストラクトノート</Link>
       </div>

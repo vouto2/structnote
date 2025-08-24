@@ -48,7 +48,7 @@ const nodeIconMap: { [key: string]: { icon: React.ElementType; color: string } }
 };
 
 // Moved Node component outside MapEditor
-const Node = ({ nodeData, onClick, nodePositions }: { nodeData: NodeData; onClick: () => void; nodePositions: { [key: string]: { top: string; left: string } } }) => {
+const Node = ({ nodeData, onClick, nodePositions, isMobileLayout }: { nodeData: NodeData; onClick: () => void; nodePositions: { [key: string]: { top: string; left: string } }; isMobileLayout?: boolean }) => {
   console.log('Rendering Node:', nodeData.node_type, nodeData.title);
   const position = nodePositions[nodeData.node_type] || { top: '50%', left: '50%' };
   const IconComponent = nodeIconMap[nodeData.node_type]?.icon;
@@ -58,8 +58,9 @@ const Node = ({ nodeData, onClick, nodePositions }: { nodeData: NodeData; onClic
     <div
       id={`node-${nodeData.node_type}`}
       onClick={onClick}
-      className="node absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col justify-center items-center rounded-lg border border-slate-800 p-4 shadow-md cursor-pointer hover:scale-105 hover:shadow-xl bg-white/90 backdrop-blur-sm text-sm w-[180px] min-h-[110px]"
-      style={position}
+      className={`node flex flex-col justify-center items-center rounded-lg border border-slate-800 p-4 shadow-md cursor-pointer hover:scale-105 hover:shadow-xl bg-white/90 backdrop-blur-sm text-sm
+        ${isMobileLayout ? 'static w-[80%] max-w-[300px]' : 'absolute transform -translate-x-1/2 -translate-y-1/2 w-[180px] min-h-[110px]'}`}
+      style={isMobileLayout ? {} : position} // Apply position only for desktop
     >
       {IconComponent && (
         <div className="node-icon mb-1">
@@ -203,13 +204,46 @@ export default function MapEditor({ initialMapData, readOnly }: { initialMapData
         })}
       </div>
 
-      <div className="md:hidden space-y-4 px-4">
-        {mapData.nodes.map(node => (
-          <div key={node.id} onClick={() => handleNodeClick(node)} className="bg-white border border-slate-200 rounded-lg p-4 shadow">
-             <h3 className="font-bold text-center text-lg mb-2">{node.title}</h3>
-             <p className="text-sm text-slate-600">{node.details}</p>
-          </div>
+      <div className="md:hidden mobile-layout px-4">
+        {/* Render Origin node */}
+        {mapData.nodes.filter(node => node.node_type === 'origin').map(node => (
+          <Node key={node.id} nodeData={node} onClick={() => handleNodeClick(node)} nodePositions={nodePositions} isMobileLayout={true} />
         ))}
+
+        {/* Render Vision and Strategy nodes in a grid */}
+        <div className="mobile-grid-2">
+          {mapData.nodes.filter(node => node.node_type === 'vision').map(node => (
+            <Node key={node.id} nodeData={node} onClick={() => handleNodeClick(node)} nodePositions={nodePositions} isMobileLayout={true} />
+          ))}
+          {mapData.nodes.filter(node => node.node_type === 'strategy').map(node => (
+            <Node key={node.id} nodeData={node} onClick={() => handleNodeClick(node)} nodePositions={nodePositions} isMobileLayout={true} />
+          ))}
+        </div>
+
+        {/* Render Resource and Obstacle nodes in a grid */}
+        <div className="mobile-grid-2">
+          {mapData.nodes.filter(node => node.node_type === 'resource').map(node => (
+            <Node key={node.id} nodeData={node} onClick={() => handleNodeClick(node)} nodePositions={nodePositions} isMobileLayout={true} />
+          ))}
+          {mapData.nodes.filter(node => node.node_type === 'obstacle').map(node => (
+            <Node key={node.id} nodeData={node} onClick={() => handleNodeClick(node)} nodePositions={nodePositions} isMobileLayout={true} />
+          ))}
+        </div>
+
+        {/* Render Purpose node */}
+        {mapData.nodes.filter(node => node.node_type === 'purpose').map(node => (
+          <Node key={node.id} nodeData={node} onClick={() => handleNodeClick(node)} nodePositions={nodePositions} isMobileLayout={true} />
+        ))}
+
+        {/* Render Value and Action nodes in a grid */}
+        <div className="mobile-grid-2">
+          {mapData.nodes.filter(node => node.node_type === 'value').map(node => (
+            <Node key={node.id} nodeData={node} onClick={() => handleNodeClick(node)} nodePositions={nodePositions} isMobileLayout={true} />
+          ))}
+          {mapData.nodes.filter(node => node.node_type === 'action').map(node => (
+            <Node key={node.id} nodeData={node} onClick={() => handleNodeClick(node)} nodePositions={nodePositions} isMobileLayout={true} />
+          ))}
+        </div>
       </div>
 
       <NodeEditModal 
@@ -218,6 +252,29 @@ export default function MapEditor({ initialMapData, readOnly }: { initialMapData
         onSave={handleNodeUpdate}
         nodeData={selectedNode}
       />
+      <style jsx>{`
+        @media (max-width: 767px) {
+          .mobile-layout {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+          }
+          .node {
+            position: static;
+            width: 80%;
+            max-width: 300px;
+          }
+          .mobile-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            width: 100%;
+            justify-items: center;
+          }
+        }
+      `}</style>
     </div>
   );
 }

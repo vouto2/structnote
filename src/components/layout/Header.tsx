@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { User, Home, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { User, Home, LogOut, Settings, User as UserIcon, Menu } from 'lucide-react'; // Import Menu icon
 
 type Folder = {
   id: string;
@@ -12,7 +12,7 @@ type Folder = {
   parent_folder_id: string | null;
 };
 
-export default function Header() {
+export default function Header({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; setIsSidebarOpen: (isOpen: boolean) => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const [allFolders, setAllFolders] = useState<Folder[]>([]);
@@ -98,6 +98,14 @@ export default function Header() {
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+      {/* Hamburger menu button for mobile */}
+      <button
+        className="md:hidden p-2 rounded-md hover:bg-slate-100"
+        onClick={() => setIsSidebarOpen(true)}
+      >
+        <Menu className="w-6 h-6 text-slate-500" />
+      </button>
+
       <div className="flex items-center space-x-2 text-sm text-slate-500">
         {breadcrumbs.map((crumb, index) => (
           <div key={index} className="flex items-center space-x-2">
@@ -129,7 +137,7 @@ export default function Header() {
               onClick={handleLogout}
               className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut className="w-4 h-4" />
               ログアウト
             </button>
           </div>
