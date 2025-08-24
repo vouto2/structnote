@@ -179,7 +179,7 @@ export default function MapEditor({ initialMapData, readOnly }: { initialMapData
 
   return (
     <div className="w-full h-full">
-      <div className="flex justify-between items-center mb-6 px-4 md:px-8">
+      <div className="flex justify-center items-center mb-6 px-4 md:px-8">
         <h1 className="text-2xl md:text-3xl font-bold">{mapData.title}</h1>
         {/* Removed Save button */}
       </div>

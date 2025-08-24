@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers'; // Keep this import
 import LogoutButton from '@/components/LogoutButton';
 import { Folder, FileText, FilePlus } from 'lucide-react';
 import Link from 'next/link';
 import CreateNewMapButton from '@/components/CreateNewMapButton';
-import CreateMapFromTemplateButton from '@/components/CreateMapFromTemplateButton'; // Will be used in templates page, but keeping here for consistency
+import CreateMapFromTemplateButton from '@/components/CreateMapFromTemplateButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,34 +20,61 @@ type MapType = {
   updated_at: string;
 };
 
-async function getRootFolders(supabase: any): Promise<FolderType[]> {
-  const { data, error } = await supabase
-    .from('folders')
-    .select('id, name')
-    .is('parent_folder_id', null)
-    .order('name');
-  if (error) console.error('Error fetching root folders:', error);
-  return data || [];
-}
-
-async function getRootMaps(supabase: any): Promise<MapType[]> {
-  const { data, error } = await supabase
-    .from('maps')
-    .select('id, title, updated_at')
-    .is('folder_id', null)
-    .eq('is_template', false) // Exclude templates from root maps
-    .order('title');
-  if (error) console.error('Error fetching root maps:', error);
-  return data || [];
-}
-
 export default async function DashboardPage() {
-  const supabase = createClient();
+  const supabase = createServerClient( // Create client directly
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        async get(name: string) {
+          return (await cookies()).get(name)?.value; // Call cookies() directly here
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookies().set({ name, value, ...options }); // Call cookies() directly here
+          } catch (error) {
+            // The `cookies()` helper can be called only from a Server Component, Server Action or Route Handler.
+            // If you're using this Supabase client in a Client Component, it's not an issue.
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookies().set({ name, value: '', ...options }); // Call cookies() directly here
+          } catch (error) {
+            // The `cookies()` helper can be called only from a Server Component, Server Action or Route Handler.
+            // If you're using this Supabase client in a Client Component, it's not an issue.
+          }
+        },
+      },
+    }
+  );
+
   const { data: { session } } = await supabase.auth.getSession();
 
+  async function getRootFolders(): Promise<FolderType[]> {
+    const { data, error } = await supabase
+      .from('folders')
+      .select('id, name')
+      .is('parent_folder_id', null)
+      .order('name');
+    if (error) console.error('Error fetching root folders:', error);
+    return data || [];
+  }
+
+  async function getRootMaps(): Promise<MapType[]> {
+    const { data, error } = await supabase
+      .from('maps')
+      .select('id, title, updated_at')
+      .is('folder_id', null)
+      .eq('is_template', false) // Exclude templates from root maps
+      .order('title');
+    if (error) console.error('Error fetching root maps:', error);
+    return data || [];
+  }
+
   const [rootFolders, rootMaps] = await Promise.all([
-    getRootFolders(supabase),
-    getRootMaps(supabase),
+    getRootFolders(),
+    getRootMaps(),
   ]);
 
   return (
@@ -59,7 +86,7 @@ export default async function DashboardPage() {
             <FilePlus className="w-4 h-4" />
             <span>テンプレートから作成</span>
           </Link>
-          <CreateNewMapButton folderId={null} /> {/* Pass null for root folder */}
+          <CreateNewMapButton folderId={null} />
         </div>
       </div>
 

@@ -34,7 +34,7 @@ export default function TemplatePreviewModal({ isOpen, onClose, templateId, temp
       console.log('TemplatePreviewModal: Fetching nodes for templateId:', templateId);
       const { data, error } = await supabase
         .from('nodes')
-        .select('node_type, title, details')
+        .select('id, node_type, title, details')
         .eq('map_id', templateId);
 
       if (error) {

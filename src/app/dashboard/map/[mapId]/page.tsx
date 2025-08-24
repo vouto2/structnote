@@ -53,7 +53,7 @@ async function getMapData(supabase: any, mapId: string): Promise<MapData | null>
 }
 
 export default async function MapPage({ params }: PageProps) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const mapData = await getMapData(supabase, params.mapId);
 
   if (!mapData) {

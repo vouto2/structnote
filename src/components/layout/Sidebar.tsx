@@ -1,14 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import FolderTree from '@/components/FolderTree';
-import { createClient } from '@/lib/supabase/client'; // Updated import
-import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const router = useRouter();
-  const supabase = createClient(); // Initialize Supabase client
+  const pathname = usePathname();
+  const supabase = createClient();
+  const [folderRefreshKey, setFolderRefreshKey] = useState(0);
 
   const handleNewFolder = async () => {
     const folderName = window.prompt('新しいフォルダの名前を入力してください:');
@@ -22,24 +25,32 @@ export default function Sidebar() {
       return;
     }
 
-    // For now, new folders are created at the root level.
-    // TODO: Implement creating sub-folders.
+    let parentFolderId: string | null = null;
+    const pathParts = pathname.split('/').filter(p => p);
+
+    console.log('Sidebar: pathname:', pathname); // Log pathname
+    console.log('Sidebar: pathParts:', pathParts); // Log pathParts
+
+    if (pathParts[0] === 'dashboard' && pathParts[1] === 'folder' && pathParts[2]) {
+      parentFolderId = pathParts[2];
+    }
+    console.log('Sidebar: determined parentFolderId:', parentFolderId); // Log determined parentFolderId
+
     const { error } = await supabase
       .from('folders')
-      .insert({ name: folderName, user_id: user.id, parent_folder_id: null });
+      .insert({ name: folderName, user_id: user.id, parent_folder_id: parentFolderId });
 
     if (error) {
       alert(`エラー: ${error.message}`);
     } else {
-      // router.refresh() is a soft refresh that re-fetches data for Server Components.
-      router.refresh();
+      setFolderRefreshKey(prev => prev + 1);
     }
   };
 
   return (
     <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col">
       <div className="h-16 flex items-center px-4 border-b border-slate-200">
-        <Link href="/dashboard" className="text-xl font-bold text-slate-800">StructNote</Link>
+        <Link href="/dashboard" className="text-xl font-bold text-slate-800">ストラクトノート</Link>
       </div>
       <div className="p-4 border-b border-slate-200">
         <button
@@ -50,7 +61,7 @@ export default function Sidebar() {
           <span>新しいフォルダ</span>
         </button>
       </div>
-      <FolderTree />
+      <FolderTree refreshTrigger={folderRefreshKey} />
     </aside>
   );
 }

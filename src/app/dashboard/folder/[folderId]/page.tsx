@@ -38,7 +38,11 @@ async function getChildFolders(supabase: any, folderId: string) {
     .select('id, name')
     .eq('parent_folder_id', folderId)
     .order('name');
-  if (error) console.error('Error fetching child folders:', error);
+  if (error) {
+    console.error('Error fetching child folders:', error);
+    return []; // Ensure an empty array is returned on error
+  }
+  console.log('Fetched child folders for folderId:', folderId, data); // Add this log
   return data || [];
 }
 
@@ -53,8 +57,8 @@ async function getMapsInFolder(supabase: any, folderId: string) {
 }
 
 export default async function FolderPage({ params }: PageProps) {
-  const supabase = createClient();
-  const { folderId } = params;
+  const supabase = await createClient();
+  const { folderId } = await params;
 
   const [currentFolder, childFolders, maps] = await Promise.all([
     getFolderData(supabase, folderId),
