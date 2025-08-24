@@ -3,15 +3,20 @@
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import CreateMapModal from './CreateMapModal';
+
+const NODE_TYPES = [
+  'origin', 'purpose', 'vision', 'value',
+  'strategy', 'action', 'obstacle', 'resource'
+];
 
 export default function CreateMapFromTemplateButton({ templateId, templateTitle, folderId }: { templateId: string; templateTitle: string; folderId: string | null }) {
   const router = useRouter();
   const supabase = createClient();
+  const [isCreateMapModalOpen, setIsCreateMapModalOpen] = useState(false);
 
-  const handleCreateFromTemplate = async () => {
-    const newMapTitle = window.prompt('新しいマップのタイトルを入力してください:', templateTitle);
-    if (!newMapTitle) return;
-
+  const handleCreateFromTemplate = async (newMapTitle: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       alert('エラー: ユーザーが認証されていません。');
@@ -59,15 +64,24 @@ export default function CreateMapFromTemplateButton({ templateId, templateTitle,
 
     // 4. Redirect to the new map page
     router.push(`/dashboard/map/${newMap.id}`);
+    setIsCreateMapModalOpen(false); // Close modal after creation
   };
 
   return (
-    <button
-      onClick={handleCreateFromTemplate}
-      className="px-4 py-2 bg-slate-800 text-white rounded-md font-semibold text-sm hover:bg-slate-700 flex items-center space-x-2"
-    >
-      <Plus className="w-4 h-4" />
-      <span>このテンプレートから作成</span>
-    </button>
+    <>
+      <button
+        onClick={() => setIsCreateMapModalOpen(true)} // Open modal on button click
+        className="px-4 py-2 bg-slate-800 text-white rounded-md font-semibold text-sm hover:bg-slate-700 flex items-center space-x-2"
+      >
+        <Plus className="w-4 h-4" />
+        <span>このテンプレートから作成</span>
+      </button>
+
+      <CreateMapModal
+        isOpen={isCreateMapModalOpen}
+        onClose={() => setIsCreateMapModalOpen(false)}
+        onCreateMap={handleCreateFromTemplate}
+      />
+    </>
   );
 }

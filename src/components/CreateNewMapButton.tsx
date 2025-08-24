@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
+import { useState } from 'react'; // Import useState
+import CreateMapModal from './CreateMapModal'; // Add this import
 
 const NODE_TYPES = [
   'origin', 'purpose', 'vision', 'value',
@@ -12,11 +14,9 @@ const NODE_TYPES = [
 export default function CreateNewMapButton({ folderId }: { folderId: string | null }) {
   const router = useRouter();
   const supabase = createClient();
+  const [isCreateMapModalOpen, setIsCreateMapModalOpen] = useState(false); // New state for modal visibility
 
-  const handleNewMap = async () => {
-    const title = window.prompt('新しいマップのタイトルを入力してください:');
-    if (!title) return;
-
+  const handleNewMap = async (title: string) => { // Modified to accept title as argument
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       alert('エラー: ユーザーが認証されていません。');
@@ -53,15 +53,24 @@ export default function CreateNewMapButton({ folderId }: { folderId: string | nu
 
     // 3. Redirect to the new map page
     router.push(`/dashboard/map/${newMap.id}`);
+    setIsCreateMapModalOpen(false); // Close modal after creation
   };
 
   return (
-    <button
-      onClick={handleNewMap}
-      className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-md font-semibold text-sm hover:bg-slate-50 flex items-center space-x-2"
-    >
-      <Plus className="w-4 h-4" />
-      <span>新規マップを作成</span>
-    </button>
+    <>
+      <button
+        onClick={() => setIsCreateMapModalOpen(true)} // Open modal on button click
+        className="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-md font-semibold text-sm hover:bg-slate-50 flex items-center space-x-2"
+      >
+        <Plus className="w-4 h-4" />
+        <span>新規マップを作成</span>
+      </button>
+
+      <CreateMapModal
+        isOpen={isCreateMapModalOpen}
+        onClose={() => setIsCreateMapModalOpen(false)}
+        onCreateMap={handleNewMap}
+      />
+    </>
   );
 }
