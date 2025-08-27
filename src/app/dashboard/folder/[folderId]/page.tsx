@@ -1,124 +1,205 @@
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
-import { Folder, FileText, FilePlus } from 'lucide-react';
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { Folder, FileText, FilePlus, MoreVertical, Pencil, Trash2, Move } from 'lucide-react';
 import CreateNewMapButton from '@/components/CreateNewMapButton';
+import RenameModal from '@/components/RenameModal';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import MoveToModal from '@/components/MoveToModal';
+import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+import { useFolder } from '@/contexts/FolderContext';
 
-export const dynamic = 'force-dynamic';
+// Type definitions
+type FolderType = { id: string; name: string; type: 'folder'; parent_folder_id: string | null; };
+type MapType = { id: string; title: string; updated_at: string; type: 'map'; folder_id: string | null; };
+type ItemType = FolderType | MapType;
 
-type PageProps = {
-  params: { folderId: string };
-};
+const ItemCard = ({ item, onRename, onDelete, onMove }: { item: ItemType, onRename: (item: ItemType) => void, onDelete: (item: ItemType) => void, onMove: (item: ItemType) => void }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-// TODO: Define these types globally
-type FolderType = {
-  id: string;
-  name: string;
-};
+  const { attributes, listeners, setNodeRef: setDraggableNodeRef, isDragging } = useDraggable({ id: item.id, data: { type: item.type } });
+  const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({ id: item.id, disabled: item.type !== 'folder' });
 
-type MapType = {
-  id: string;
-  title: string;
-  updated_at: string;
-};
+  const setNodeRef = (node: HTMLElement | null) => {
+    setDraggableNodeRef(node);
+    if (item.type === 'folder') setDroppableNodeRef(node);
+  };
 
-async function getFolderData(supabase: any, folderId: string) {
-  const { data, error } = await supabase
-    .from('folders')
-    .select('id, name')
-    .eq('id', folderId)
-    .single();
-  if (error) console.error('Error fetching folder details:', error);
-  return data;
-}
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setIsMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-async function getChildFolders(supabase: any, folderId: string) {
-  const { data, error } = await supabase
-    .from('folders')
-    .select('id, name')
-    .eq('parent_folder_id', folderId)
-    .order('name');
-  if (error) {
-    console.error('Error fetching child folders:', error);
-    return []; // Ensure an empty array is returned on error
-  }
-  console.log('Fetched child folders for folderId:', folderId, data); // Add this log
-  return data || [];
-}
+  const isFolder = item.type === 'folder';
+  const linkHref = isFolder ? `/dashboard/folder/${item.id}` : `/dashboard/map/${item.id}`;
+  const name = isFolder ? item.name : item.title;
 
-async function getMapsInFolder(supabase: any, folderId: string) {
-  const { data, error } = await supabase
-    .from('maps')
-    .select('id, title, updated_at')
-    .eq('folder_id', folderId)
-    .order('title');
-  if (error) console.error('Error fetching maps:', error);
-  return data || [];
-}
-
-export default async function FolderPage({ params }: PageProps) {
-  const supabase = await createClient();
-  const { folderId } = await params;
-
-  const [currentFolder, childFolders, maps] = await Promise.all([
-    getFolderData(supabase, folderId),
-    getChildFolders(supabase, folderId),
-    getMapsInFolder(supabase, folderId),
-  ]);
-
-  if (!currentFolder) {
-    return <div className="text-center">フォルダが見つかりません。</div>;
-  }
+  const style = { opacity: isDragging ? 0.4 : 1, boxShadow: isOver ? '0 0 0 2px #3b82f6' : undefined };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">{currentFolder.name}</h2>
-        <div className="flex space-x-2">
-          <Link href="/dashboard/templates" className="px-4 py-2 bg-slate-800 text-white rounded-md font-semibold text-sm hover:bg-slate-700 flex items-center space-x-2">
-            <FilePlus className="w-4 h-4" />
-            <span>テンプレートから作成</span>
-          </Link>
-          <CreateNewMapButton folderId={folderId} />
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="bg-white p-4 rounded-lg border border-slate-200 flex items-center justify-between hover:shadow-md transition group">
+      <Link href={linkHref} className="flex items-center space-x-4 flex-grow truncate">
+        <div className={`w-12 h-12 flex-shrink-0 rounded-lg flex items-center justify-center ${isFolder ? 'bg-sky-100' : 'bg-slate-100'}`}>
+          {isFolder ? <Folder className="w-6 h-6 text-sky-600" /> : <FileText className="w-6 h-6 text-slate-500" />}
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {childFolders.map((folder: FolderType) => (
-          <Link key={folder.id} href={`/dashboard/folder/${folder.id}`}>
-            <div className="bg-white p-4 rounded-lg border border-slate-200 flex items-center space-x-4 hover:shadow-md hover:border-slate-300 transition cursor-pointer">
-              <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-sky-100 flex items-center justify-center">
-                <Folder className="w-6 h-6 text-sky-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 truncate">{folder.name}</h3>
-              </div>
-            </div>
-          </Link>
-        ))}
-
-        {maps.map((map: MapType) => (
-          <Link key={map.id} href={`/dashboard/map/${map.id}`}>
-            <div className="bg-white p-4 rounded-lg border border-slate-200 flex items-center space-x-4 hover:shadow-md hover:border-slate-300 transition cursor-pointer">
-              <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-slate-100 flex items-center justify-center">
-                <FileText className="w-6 h-6 text-slate-500" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 truncate">{map.title}</h3>
-                <p className="text-sm text-slate-500">
-                  {new Date(map.updated_at).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {childFolders.length === 0 && maps.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-slate-500">このフォルダにはアイテムがありません。</p>
+        <div className="truncate">
+          <h3 className="font-semibold text-slate-800 truncate">{name}</h3>
+          {!isFolder && <p className="text-sm text-slate-500">{new Date((item as MapType).updated_at).toLocaleDateString()}</p>}
         </div>
-      )}
+      </Link>
+      <div className="relative flex-shrink-0 ml-2" ref={menuRef}>
+        <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); e.preventDefault(); setIsMenuOpen(!isMenuOpen); }} className="p-2 rounded-full hover:bg-slate-200 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity">
+          <MoreVertical className="w-5 h-5 text-slate-600" />
+        </button>
+        {isMenuOpen && (
+          <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-full mt-1 w-40 bg-white rounded-md shadow-lg py-1 z-20 border border-slate-200">
+            <button onClick={(e) => { e.preventDefault(); onRename(item); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
+              <Pencil className="w-4 h-4 mr-2" /> 名前の変更
+            </button>
+            <button onClick={(e) => { e.preventDefault(); onMove(item); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
+              <Move className="w-4 h-4 mr-2" /> 移動
+            </button>
+            <button onClick={(e) => { e.preventDefault(); onDelete(item); setIsMenuOpen(false); }} className="flex items-center w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-slate-100">
+              <Trash2 className="w-4 h-4 mr-2" /> 削除
+            </button>
+          </div>
+        )}
+      </div>
     </div>
+  );
+};
+
+export default function FolderPage() {
+  const params = useParams();
+  const folderId = params.folderId as string;
+  const [items, setItems] = useState<ItemType[]>([]);
+  const [currentFolder, setCurrentFolder] = useState<FolderType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<ItemType | null>(null);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isMoveToModalOpen, setIsMoveToModalOpen] = useState(false);
+  const supabase = createClient();
+  const { triggerRefresh } = useFolder();
+  
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const { data: folderData } = await supabase.from('folders').select('id, name, parent_folder_id').eq('id', folderId).single();
+      if (folderData) setCurrentFolder({ ...folderData, type: 'folder' });
+
+      const { data: childFolders } = await supabase.from('folders').select('id, name, parent_folder_id').eq('parent_folder_id', folderId).order('name');
+      const { data: maps } = await supabase.from('maps').select('id, title, updated_at, folder_id').eq('folder_id', folderId).order('title');
+      
+      const combinedItems: ItemType[] = [
+        ...(childFolders?.map(f => ({ ...f, type: 'folder' as const })) || []),
+        ...(maps?.map(m => ({ ...m, type: 'map' as const })) || []),
+      ];
+      setItems(combinedItems);
+      setLoading(false);
+    };
+    fetchData();
+  }, [supabase, folderId]);
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const activeItem = items.find(i => i.id === active.id);
+    const overItem = items.find(i => i.id === over.id);
+    if (!activeItem || !overItem || overItem.type !== 'folder') return;
+
+    const fromTable = activeItem.type === 'folder' ? 'folders' : 'maps';
+    const parentIdColumn = activeItem.type === 'folder' ? 'parent_folder_id' : 'folder_id';
+    const { error } = await supabase.from(fromTable).update({ [parentIdColumn]: over.id }).eq('id', active.id);
+    if (error) alert(`エラー: ${error.message}`);
+    else setItems(prev => {
+        console.log('handleDragEnd: Items before filter:', prev);
+        const newItems = prev.filter(item => item.id !== active.id);
+        console.log('handleDragEnd: Items after filter:', newItems);
+        return newItems;
+    });
+  };
+
+  const handleRenameClick = (item: ItemType) => { setSelectedItem(item); setIsRenameModalOpen(true); };
+  const handleDeleteClick = (item: ItemType) => { setSelectedItem(item); setIsDeleteModalOpen(true); };
+  const handleMoveClick = (item: ItemType) => { setSelectedItem(item); setIsMoveToModalOpen(true); };
+
+  const handleRenameSubmit = async (newName: string) => {
+    if (!selectedItem) return;
+    const fromTable = selectedItem.type === 'folder' ? 'folders' : 'maps';
+    const nameColumn = selectedItem.type === 'folder' ? 'name' : 'title';
+    const { error } = await supabase.from(fromTable).update({ [nameColumn]: newName }).eq('id', selectedItem.id);
+    if (error) alert(`エラー: ${error.message}`);
+    else setItems(prev => prev.map(item => item.id === selectedItem.id ? { ...item, ...(item.type === 'folder' ? { name: newName } : { title: newName }) } : item));
+    setSelectedItem(null); setIsRenameModalOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedItem) return;
+    const fromTable = selectedItem.type === 'folder' ? 'folders' : 'maps';
+    const { error } = await supabase.from(fromTable).delete().eq('id', selectedItem.id);
+    if (error) alert(`エラー: ${error.message}`);
+    else setItems(prev => prev.filter(item => item.id !== selectedItem.id));
+    setSelectedItem(null); setIsDeleteModalOpen(false);
+  };
+
+  const handleMoveConfirm = async (destinationFolderId: string | null) => {
+    if (!selectedItem) return;
+    const fromTable = selectedItem.type === 'folder' ? 'folders' : 'maps';
+    const parentIdColumn = selectedItem.type === 'folder' ? 'parent_folder_id' : 'folder_id';
+    const { error } = await supabase.from(fromTable).update({ [parentIdColumn]: destinationFolderId }).eq('id', selectedItem.id);
+    if (error) alert(`エラー: ${error.message}`);
+    else {
+        setItems(prev => {
+            console.log('handleMoveConfirm: Items before filter:', prev);
+            const newItems = prev.filter(item => item.id !== selectedItem.id);
+            console.log('handleMoveConfirm: Items after filter:', newItems);
+            return newItems;
+        });
+        triggerRefresh();
+    }
+    setSelectedItem(null); setIsMoveToModalOpen(false);
+  };
+
+  if (loading) return <div className="p-4 md:p-8 text-center">読み込み中...</div>;
+  if (!currentFolder) return <div className="p-4 md:p-8 text-center">フォルダが見つかりません。</div>;
+
+  return (
+    <DndContext onDragEnd={handleDragEnd}>
+      <div className="w-full h-full p-4 md:p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-slate-800">{currentFolder.name}</h2>
+          <div className="flex space-x-2">
+            <Link href="/dashboard/templates" className="px-4 py-2 bg-slate-800 text-white rounded-md font-semibold text-sm hover:bg-slate-700 flex items-center space-x-2">
+              <FilePlus className="w-4 h-4" />
+              <span>テンプレートから作成</span>
+            </Link>
+            <CreateNewMapButton folderId={folderId} />
+          </div>
+        </div>
+
+        {items.length === 0 ? (
+          <div className="text-center py-12"><p className="text-slate-500">このフォルダにはアイテムがありません。</p></div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {items.map((item) => (
+              <ItemCard key={item.id} item={item} onRename={handleRenameClick} onDelete={handleDeleteClick} onMove={handleMoveClick} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedItem && <RenameModal isOpen={isRenameModalOpen} onClose={() => setSelectedItem(null)} onRename={handleRenameSubmit} currentItemName={selectedItem.type === 'folder' ? selectedItem.name : (selectedItem as MapType).title} itemType={selectedItem.type} />}
+      {selectedItem && <DeleteConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setSelectedItem(null)} onConfirm={handleDeleteConfirm} itemName={selectedItem.type === 'folder' ? selectedItem.name : (selectedItem as MapType).title} itemType={selectedItem.type} />}
+      {selectedItem && <MoveToModal isOpen={isMoveToModalOpen} onClose={() => setSelectedItem(null)} onMove={handleMoveConfirm} movingItemName={selectedItem.type === 'folder' ? selectedItem.name : (selectedItem as MapType).title} currentFolderId={folderId} />}
+    </DndContext>
   );
 }

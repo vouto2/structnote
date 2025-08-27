@@ -62,34 +62,71 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
     };
   }, []);
 
-  const breadcrumbs = useMemo(() => {
-    if (allFolders.length === 0) return [];
+  const [breadcrumbs, setBreadcrumbs] = useState<{ name: string; href: string }[]>([]);
 
-    const pathParts = pathname.split('/').filter(p => p);
-    const crumbs: { name: string; href: string }[] = [{ name: 'ホーム', href: '/dashboard' }];
-
-    if (pathParts[1] === 'folder' && pathParts[2]) {
-      let currentFolderId: string | null = pathParts[2];
-      const folderMap = new Map(allFolders.map(f => [f.id, f]));
-      const path: Folder[] = [];
-      
-      while (currentFolderId) {
-        const folder = folderMap.get(currentFolderId);
-        if (folder) {
-          path.unshift(folder);
-          currentFolderId = folder.parent_folder_id;
-        } else {
-          currentFolderId = null;
-        }
+  useEffect(() => {
+    const calculateBreadcrumbs = async () => {
+      if (allFolders.length === 0) {
+        setBreadcrumbs([{ name: 'ホーム', href: '/dashboard' }]);
+        return;
       }
-      path.forEach(folder => {
-        crumbs.push({ name: folder.name, href: `/dashboard/folder/${folder.id}` });
-      });
-    }
-    // TODO: Add breadcrumbs for map pages as well
 
-    return crumbs;
-  }, [pathname, allFolders]);
+      const pathParts = pathname.split('/').filter(p => p);
+      const crumbs: { name: string; href: string }[] = [{ name: 'ホーム', href: '/dashboard' }];
+
+      if (pathParts[1] === 'folder' && pathParts[2]) {
+        let currentFolderId: string | null = pathParts[2];
+        const folderMap = new Map(allFolders.map(f => [f.id, f]));
+        const path: Folder[] = [];
+        
+        while (currentFolderId) {
+          const folder = folderMap.get(currentFolderId);
+          if (folder) {
+            path.unshift(folder);
+            currentFolderId = folder.parent_folder_id;
+          } else {
+            currentFolderId = null;
+          }
+        }
+        path.forEach(folder => {
+          crumbs.push({ name: folder.name, href: `/dashboard/folder/${folder.id}` });
+        });
+      }
+      if (pathParts[1] === 'map' && pathParts[2]) {
+        const mapId = pathParts[2];
+        // Fetch map details to get its title and parent folder_id
+        const { data: map, error } = await supabase.from('maps').select('id, title, folder_id').eq('id', mapId).single();
+        if (error || !map) {
+          console.error('Error fetching map for breadcrumb:', error);
+          setBreadcrumbs(crumbs); // Set crumbs even if map fetch fails
+          return;
+        }
+
+        const mapCrumb = { name: map.title, href: `/dashboard/map/${map.id}` };
+        let currentFolderId: string | null = map.folder_id;
+        const folderMap = new Map(allFolders.map(f => [f.id, f]));
+        const path: Folder[] = [];
+
+        while (currentFolderId) {
+          const folder = folderMap.get(currentFolderId);
+          if (folder) {
+            path.unshift(folder);
+            currentFolderId = folder.parent_folder_id;
+          } else {
+            currentFolderId = null;
+          }
+        }
+        path.forEach(folder => {
+          crumbs.push({ name: folder.name, href: `/dashboard/folder/${folder.id}` });
+        });
+        crumbs.push(mapCrumb); // Add the map itself as the last crumb
+      }
+
+      setBreadcrumbs(crumbs);
+    };
+
+    calculateBreadcrumbs();
+  }, [pathname, allFolders, supabase]); // Add supabase to dependencies for map fetching
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

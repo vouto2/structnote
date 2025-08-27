@@ -6,13 +6,14 @@ import Link from 'next/link';
 import FolderTree from '@/components/FolderTree';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
+import { useFolder } from '@/contexts/FolderContext';
 import CreateFolderModal from '../CreateFolderModal';
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; setIsSidebarOpen: (isOpen: boolean) => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
-  const [folderRefreshKey, setFolderRefreshKey] = useState(0);
+  const { refreshKey, triggerRefresh } = useFolder();
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false); // New state for modal visibility
 
   const handleNewFolder = async (folderName: string) => { // Modified to accept folderName as argument
@@ -40,7 +41,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebar
     if (error) {
       alert(`エラー: ${error.message}`);
     } else {
-      setFolderRefreshKey(prev => prev + 1);
+      triggerRefresh();
     }
     setIsCreateFolderModalOpen(false); // Close modal after creation
   };
@@ -63,7 +64,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebar
           <span>新しいフォルダ</span>
         </button>
       </div>
-      <FolderTree refreshTrigger={folderRefreshKey} />
+      <FolderTree refreshTrigger={refreshKey} />
 
       <CreateFolderModal
         isOpen={isCreateFolderModalOpen}
