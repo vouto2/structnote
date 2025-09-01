@@ -2,54 +2,45 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { User, Mail, Lock } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext'; // Import useUser
+import { Mail } from 'lucide-react';
 
 export default function ProfilePage() {
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { displayName: contextDisplayName, updateDisplayName, isLoading } = useUser();
+
+  // Local state for form inputs
   const [displayName, setDisplayName] = useState('');
-  // const [avatarUrl, setAvatarUrl] = useState(''); // Removed avatarUrl state
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // State for messages and errors
   const [message, setMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      setLoading(true);
-      setError(null);
+    // Initialize form with data from context
+    if (contextDisplayName) {
+      setDisplayName(contextDisplayName);
+    }
+
+    // Fetch non-contextual user data like email
+    const fetchUserEmail = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-
       if (user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('display_name') // Removed avatar_url from select
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          setError('プロフィールの読み込みに失敗しました。');
-        } else {
-          setProfile(profileData);
-          setDisplayName(profileData.display_name || '');
-          // setAvatarUrl(profileData.avatar_url || ''); // Removed setAvatarUrl
-        }
+        setUserEmail(user.email);
       }
-      setLoading(false);
     };
-
-    fetchUserData();
-  }, []);
+    fetchUserEmail();
+  }, [contextDisplayName, supabase]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
     setError('');
 
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setError('ユーザーが認証されていません。');
       return;
@@ -57,13 +48,15 @@ export default function ProfilePage() {
 
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ display_name: displayName, updated_at: new Date().toISOString() }) // Removed avatar_url from update
+      .update({ display_name: displayName, updated_at: new Date().toISOString() })
       .eq('id', user.id);
 
     if (updateError) {
       setError(`プロフィールの更新に失敗しました: ${updateError.message}`);
     } else {
       setMessage('プロフィールを更新しました。');
+      // Update the shared context, which will update the header
+      updateDisplayName(displayName);
     }
   };
 
@@ -92,12 +85,8 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <div className="p-8 text-center">読み込み中...</div>;
-  }
-
-  if (error) {
-    return <div className="p-8 text-center text-red-500">{error}</div>;
   }
 
   return (
@@ -122,7 +111,7 @@ export default function ProfilePage() {
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">メールアドレス</label>
             <div className="mt-1 flex items-center space-x-2">
               <Mail className="w-5 h-5 text-gray-500" />
-              <p className="text-gray-900">{user?.email}</p>
+              <p className="text-gray-900">{userEmail || ''}</p>
             </div>
           </div>
           <div>
@@ -135,7 +124,6 @@ export default function ProfilePage() {
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
-          {/* Removed Avatar URL section */}
           <div className="flex justify-end space-x-3">
             <button
               type="submit"

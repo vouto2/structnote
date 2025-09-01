@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { User, Home, LogOut, Settings, User as UserIcon, Menu } from 'lucide-react'; // Import Menu icon
+import { useUser } from '@/contexts/UserContext'; // Import useUser
+import { User, Home, LogOut, Settings, User as UserIcon, Menu } from 'lucide-react';
 
 type Folder = {
   id: string;
@@ -19,27 +20,9 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
   const supabase = createClient();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [userDisplayName, setUserDisplayName] = useState<string | null>(null); // State for display name
+  const { displayName } = useUser(); // Get displayName from context
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Error fetching user display name:', profileError);
-        } else {
-          setUserDisplayName(profileData.display_name || user.email); // Use email as fallback
-        }
-      }
-    };
-    fetchUserData();
-
     const fetchFolders = async () => {
       const { data } = await supabase.from('folders').select('id, name, parent_folder_id');
       if (data) {
@@ -94,11 +77,10 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
       }
       if (pathParts[1] === 'map' && pathParts[2]) {
         const mapId = pathParts[2];
-        // Fetch map details to get its title and parent folder_id
         const { data: map, error } = await supabase.from('maps').select('id, title, folder_id').eq('id', mapId).single();
         if (error || !map) {
           console.error('Error fetching map for breadcrumb:', error);
-          setBreadcrumbs(crumbs); // Set crumbs even if map fetch fails
+          setBreadcrumbs(crumbs);
           return;
         }
 
@@ -119,14 +101,14 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
         path.forEach(folder => {
           crumbs.push({ name: folder.name, href: `/dashboard/folder/${folder.id}` });
         });
-        crumbs.push(mapCrumb); // Add the map itself as the last crumb
+        crumbs.push(mapCrumb);
       }
 
       setBreadcrumbs(crumbs);
     };
 
     calculateBreadcrumbs();
-  }, [pathname, allFolders, supabase]); // Add supabase to dependencies for map fetching
+  }, [pathname, allFolders, supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -135,7 +117,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-      {/* Hamburger menu button for mobile */}
       <button
         className="md:hidden p-2 rounded-md hover:bg-slate-100"
         onClick={() => setIsSidebarOpen(true)}
@@ -154,8 +135,8 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
           </div>
         ))}
       </div>
-      <div className="relative flex items-center space-x-4" ref={dropdownRef}> {/* Add ref to div */}
-        {userDisplayName && <span className="text-sm font-medium text-slate-700 mr-2">{userDisplayName}</span>} {/* Display display_name */}
+      <div className="relative flex items-center space-x-4" ref={dropdownRef}>
+        {displayName && <span className="text-sm font-medium text-slate-700 mr-2">{displayName}</span>}
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="p-2 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -169,7 +150,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: { isSidebarO
               <UserIcon className="w-4 h-4 mr-2" />
               マイプロフィール
             </Link>
-            {/* Removed Settings link */}
             <button
               onClick={handleLogout}
               className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
