@@ -36,11 +36,23 @@ export default function CreateNewMapButton({ folderId }: { folderId: string | nu
     }
 
     // 2. Create the 8 default nodes for the new map
+    const nodeTitles: { [key: string]: string } = {
+      origin: '【源泉】きっかけ',
+      purpose: '【理想】目指す姿',
+      vision: '【覚醒】転換点',
+      value: '【変革】新しい現実',
+      strategy: '【戦略】進む道',
+      action: '【試練】交差点',
+      obstacle: '【障害】向かい風',
+      resource: '【資源】追い風'
+    };
+
     const nodesToInsert = NODE_TYPES.map(nodeType => ({
       map_id: newMap.id,
       node_type: nodeType,
-      title: nodeType.charAt(0).toUpperCase() + nodeType.slice(1), // Capitalize first letter
-      details: ''
+      title: nodeTitles[nodeType],
+      details: '',
+      is_user_input: false
     }));
 
     const { error: nodesError } = await supabase.from('nodes').insert(nodesToInsert);

@@ -176,7 +176,7 @@ export default function FolderPage() {
     <DndContext onDragEnd={handleDragEnd}>
       <div className="w-full h-full p-4 md:p-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-slate-800">{currentFolder.name}</h2>
+          <h2 className="hidden sm:block text-2xl font-bold text-slate-800">{currentFolder.name}</h2>
           <div className="flex space-x-2">
             <Link href="/dashboard/templates" className="px-4 py-2 bg-slate-800 text-white rounded-md font-semibold text-sm hover:bg-slate-700 flex items-center space-x-2">
               <FilePlus className="w-4 h-4" />

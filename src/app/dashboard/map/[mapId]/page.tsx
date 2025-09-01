@@ -21,6 +21,7 @@ export type NodeData = {
   node_type: string;
   title: string;
   details: string;
+  is_user_input: boolean; // Add this line
   child_map_id: string | null;
 };
 

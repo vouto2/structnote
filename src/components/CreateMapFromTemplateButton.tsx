@@ -52,6 +52,7 @@ export default function CreateMapFromTemplateButton({ templateId, templateTitle,
       node_type: node.node_type,
       title: node.title,
       details: node.details,
+      is_user_input: false // Add this line
     }));
 
     const { error: nodesError } = await supabase.from('nodes').insert(nodesToInsert);

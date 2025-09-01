@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { MapData, NodeData } from '@/app/dashboard/map/[mapId]/page';
-import { supabase } from '@/lib/supabase/client';
 import { createClient } from '@/lib/supabase/client';
 import NodeEditModal from './NodeEditModal';
 
@@ -48,8 +47,18 @@ const nodeIconMap: { [key: string]: { icon: React.ElementType; color: string } }
 };
 
 // Moved Node component outside MapEditor
+const NODE_TYPES = [
+  'origin', 'purpose', 'vision', 'value',
+  'strategy', 'action', 'obstacle', 'resource'
+];
+
+const getDefaultTitle = (nodeType: string) => {
+  return nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
+};
+
+// Moved Node component outside MapEditor
 const Node = ({ nodeData, onClick, nodePositions, isMobileLayout }: { nodeData: NodeData; onClick: () => void; nodePositions: { [key: string]: { top: string; left: string } }; isMobileLayout?: boolean }) => {
-  console.log('Rendering Node:', nodeData.node_type, nodeData.title);
+  console.log('Rendering Node:', nodeData.node_type, nodeData.title, 'details:', nodeData.details, 'is_user_input:', nodeData.is_user_input);
   const position = nodePositions[nodeData.node_type] || { top: '50%', left: '50%' };
   const IconComponent = nodeIconMap[nodeData.node_type]?.icon;
   const iconColorClass = nodeIconMap[nodeData.node_type]?.color;
@@ -67,8 +76,10 @@ const Node = ({ nodeData, onClick, nodePositions, isMobileLayout }: { nodeData: 
           <IconComponent className={`w-6 h-6 ${iconColorClass}`} />
         </div>
       )}
-      <h3 className="node-title font-bold text-center text-2xl mb-1 font-shippori-mincho text-slate-800">{nodeData.title}</h3>
-      <p className="text-sm text-slate-600 text-center line-clamp-3">{nodeData.details}</p>
+      <h3 className={`node-title font-bold text-center text-2xl mb-1 font-shippori-mincho ${nodeData.is_user_input ? 'text-slate-800' : 'text-slate-400 italic !important'}`}>{nodeData.title}</h3>
+      <p className={`text-sm text-center line-clamp-3 ${nodeData.is_user_input ? 'text-slate-800' : 'text-slate-400 italic'}`}>
+        {nodeData.details}
+      </p>
     </div>
   );
 };
@@ -93,22 +104,24 @@ export default function MapEditor({ initialMapData, readOnly }: { initialMapData
     setSelectedNode(null);
   };
 
-  const handleNodeUpdate = async (updatedNode: NodeData) => {
+  const handleNodeUpdate = async (updatedNodeFromModal: NodeData) => {
+    const updatedNodeWithUserInput = { ...updatedNodeFromModal, is_user_input: true };
+
     // Update local state first
-    const newNodes = mapData.nodes.map(n => n.id === updatedNode.id ? updatedNode : n);
+    const newNodes = mapData.nodes.map(n => n.id === updatedNodeWithUserInput.id ? updatedNodeWithUserInput : n);
     setMapData({ ...mapData, nodes: newNodes });
 
     // Save to database immediately
     const { error } = await supabase
       .from('nodes')
-      .update({ title: updatedNode.title, details: updatedNode.details })
-      .eq('id', updatedNode.id);
+      .update({ title: updatedNodeWithUserInput.title, details: updatedNodeWithUserInput.details, is_user_input: true })
+      .eq('id', updatedNodeWithUserInput.id);
 
     if (error) {
       alert(`ノードの保存中にエラーが発生しました: ${error.message}`);
       console.error('Node save error:', error);
     } else {
-      console.log('Node saved successfully:', updatedNode.id);
+      console.log('Node saved successfully:', updatedNodeWithUserInput.id);
     }
     handleCloseModal();
   };

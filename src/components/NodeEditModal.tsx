@@ -11,6 +11,10 @@ const NODE_TYPES = [
   'strategy', 'action', 'obstacle', 'resource'
 ];
 
+const getDefaultTitle = (nodeType: string) => {
+  return nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
+};
+
 interface NodeEditModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,9 +30,12 @@ export default function NodeEditModal({ isOpen, onClose, onSave, nodeData }: Nod
   const [isCreateChildMapModalOpen, setIsCreateChildMapModalOpen] = useState(false); // New state for modal visibility
 
   useEffect(() => {
+    console.log('NodeEditModal nodeData:', nodeData?.details, nodeData?.is_user_input); // Add this log
     if (nodeData) {
-      setTitle(nodeData.title);
-      setDetails(nodeData.details || '');
+      // If it's a default node (not user input), set initial state to empty string
+      // Otherwise, use the actual title/details from nodeData
+      setTitle(nodeData.is_user_input ? nodeData.title : '');
+      setDetails(nodeData.is_user_input ? (nodeData.details || '') : '');
     } else {
       setTitle('');
       setDetails('');
@@ -108,6 +115,7 @@ export default function NodeEditModal({ isOpen, onClose, onSave, nodeData }: Nod
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="text-2xl font-bold p-1 w-full bg-transparent focus:bg-slate-100 rounded-md outline-none"
+                placeholder={nodeData.is_user_input ? '' : nodeData.title}
               />
             </div>
 
@@ -119,7 +127,11 @@ export default function NodeEditModal({ isOpen, onClose, onSave, nodeData }: Nod
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                   className="w-full h-48 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
-                  placeholder="ここに詳細な内容を入力します..."
+                  placeholder={
+                    nodeData.is_user_input
+                      ? (nodeData.details === '' ? '' : 'ここに詳細な内容を入力します...') // is_user_input が true で details が空なら placeholder も空
+                      : ''
+                  }
                 />
               </div>
               {nodeData.child_map_id ? (
