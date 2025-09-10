@@ -49,7 +49,12 @@ async function getMapData(supabase: SupabaseClient, mapId: string): Promise<MapD
   return { ...map, nodes };
 }
 
-export default async function MapPage({ params }: { params: { mapId: string } }) {
+type Props = {
+  params: { mapId: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
+export default async function MapPage({ params }: Props) {
   const supabase = await createClient();
   const mapData = await getMapData(supabase, params.mapId);
 
