@@ -88,7 +88,13 @@ export default function FolderPage() {
   const [isMoveToModalOpen, setIsMoveToModalOpen] = useState(false);
   const supabase = createClient();
   const { triggerRefresh } = useFolder();
-  
+
+  const getItemTypeForModal = (type: 'folder' | 'map'): 'フォルダ' | 'マップ' => {
+    if (type === 'folder') {
+      return 'フォルダ';
+    }
+    return 'マップ';
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -197,8 +203,8 @@ export default function FolderPage() {
         )}
       </div>
 
-      {selectedItem && <RenameModal isOpen={isRenameModalOpen} onClose={() => setSelectedItem(null)} onRename={handleRenameSubmit} currentItemName={selectedItem.type === 'folder' ? selectedItem.name : (selectedItem as MapType).title} itemType={selectedItem.type} />}
-      {selectedItem && <DeleteConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setSelectedItem(null)} onConfirm={handleDeleteConfirm} itemName={selectedItem.type === 'folder' ? selectedItem.name : (selectedItem as MapType).title} itemType={selectedItem.type} />}
+      {selectedItem && <RenameModal isOpen={isRenameModalOpen} onClose={() => setSelectedItem(null)} onRename={handleRenameSubmit} currentItemName={selectedItem.type === 'folder' ? selectedItem.name : (selectedItem as MapType).title} itemType={getItemTypeForModal(selectedItem.type)} />}
+      {selectedItem && <DeleteConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setSelectedItem(null)} onConfirm={handleDeleteConfirm} itemName={selectedItem.type === 'folder' ? selectedItem.name : (selectedItem as MapType).title} itemType={getItemTypeForModal(selectedItem.type)} />}
       {selectedItem && <MoveToModal isOpen={isMoveToModalOpen} onClose={() => setSelectedItem(null)} onMove={handleMoveConfirm} movingItemName={selectedItem.type === 'folder' ? selectedItem.name : (selectedItem as MapType).title} currentFolderId={folderId} />}
     </DndContext>
   );
