@@ -97,6 +97,13 @@ export default function DashboardPage() {
   const supabase = createClient();
   const { triggerRefresh } = useFolder();
 
+  const getItemTypeForModal = (type: 'folder' | 'map'): 'フォルダ' | 'マップ' => {
+    if (type === 'folder') {
+      return 'フォルダ';
+    }
+    return 'マップ';
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -206,10 +213,10 @@ export default function DashboardPage() {
       </div>
 
       {selectedItem && (
-        <RenameModal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} onRename={handleRenameSubmit} currentItemName={selectedItem.type === 'folder' ? selectedItem.name : selectedItem.title} itemType={selectedItem.type} />
+        <RenameModal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} onRename={handleRenameSubmit} currentItemName={selectedItem.type === 'folder' ? selectedItem.name : selectedItem.title} itemType={getItemTypeForModal(selectedItem.type)} />
       )}
       {selectedItem && (
-        <DeleteConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteConfirm} itemName={selectedItem.type === 'folder' ? selectedItem.name : selectedItem.title} itemType={selectedItem.type} />
+        <DeleteConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleDeleteConfirm} itemName={selectedItem.type === 'folder' ? selectedItem.name : selectedItem.title} itemType={getItemTypeForModal(selectedItem.type)} />
       )}
       {selectedItem && (
         <MoveToModal isOpen={isMoveToModalOpen} onClose={() => setIsMoveToModalOpen(false)} onMove={handleMoveConfirm} movingItemName={selectedItem.type === 'folder' ? selectedItem.name : selectedItem.title} currentFolderId={null} />
