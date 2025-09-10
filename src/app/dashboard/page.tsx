@@ -8,7 +8,7 @@ import CreateNewMapButton from '@/components/CreateNewMapButton';
 import RenameModal from '@/components/RenameModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import MoveToModal from '@/components/MoveToModal';
-import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+import { DndContext, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
 import { useFolder } from '@/contexts/FolderContext';
 
 // Type definitions
