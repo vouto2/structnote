@@ -4,27 +4,6 @@ import MapEditor from '@/components/MapEditor'; // This component will be create
 
 export const dynamic = 'force-dynamic';
 
-type PageProps = {
-  params: { mapId: string };
-};
-
-// TODO: Define these types globally
-export type MapData = {
-  id: string;
-  title: string;
-  nodes: NodeData[];
-};
-
-export type NodeData = {
-  id: string;
-  map_id: string;
-  node_type: string;
-  title: string;
-  details: string;
-  is_user_input: boolean; // Add this line
-  child_map_id: string | null;
-};
-
 async function getMapData(supabase: SupabaseClient, mapId: string): Promise<MapData | null> {
   const { data: map, error: mapError } = await supabase
     .from('maps')
@@ -53,7 +32,7 @@ async function getMapData(supabase: SupabaseClient, mapId: string): Promise<MapD
   return { ...map, nodes };
 }
 
-export default async function MapPage({ params }: PageProps) {
+export default async function MapPage({ params }: { params: { mapId: string } }) {
   const supabase = await createClient();
   const mapData = await getMapData(supabase, params.mapId);
 
