@@ -29,7 +29,7 @@ export default function ProfilePage() {
     const fetchUserEmail = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserEmail(user.email);
+        setUserEmail(user.email ?? null);
       }
     };
     fetchUserEmail();
