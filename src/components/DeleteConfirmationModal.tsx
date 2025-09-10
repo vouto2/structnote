@@ -11,7 +11,7 @@ interface DeleteConfirmationModalProps {
   itemType?: 'フォルダ' | 'マップ';
 }
 
-export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, itemName, itemType = 'アイテム' }: DeleteConfirmationModalProps) {
+export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, itemName, itemType }: DeleteConfirmationModalProps) {
   if (!isOpen) return null;
 
   return (
