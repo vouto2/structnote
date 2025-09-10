@@ -25,7 +25,7 @@ export type NodeData = {
   child_map_id: string | null;
 };
 
-async function getMapData(supabase: any, mapId: string): Promise<MapData | null> {
+async function getMapData(supabase: SupabaseClient, mapId: string): Promise<MapData | null> {
   const { data: map, error: mapError } = await supabase
     .from('maps')
     .select('id, title')

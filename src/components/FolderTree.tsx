@@ -199,7 +199,7 @@ export default function FolderTree({ refreshTrigger }: { refreshTrigger: number 
       const allFolderIds = new Set<string>(folders.map(f => f.id));
       setExpandedItemIds(allFolderIds);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('データの読み込みに失敗しました。');
       console.error(err);
     } finally {
