@@ -1,8 +1,26 @@
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import MapEditor from '@/components/MapEditor'; // This component will be created next
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
+
+// TODO: Define these types globally
+export type MapData = {
+  id: string;
+  title: string;
+  nodes: NodeData[];
+};
+
+export type NodeData = {
+  id: string;
+  map_id: string;
+  node_type: string;
+  title: string;
+  details: string;
+  is_user_input: boolean; // Add this line
+  child_map_id: string | null;
+};
 
 async function getMapData(supabase: SupabaseClient, mapId: string): Promise<MapData | null> {
   const { data: map, error: mapError } = await supabase
