@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 import MapEditor from '@/components/MapEditor'; // This component will be created next
 import type { SupabaseClient } from '@supabase/supabase-js';
 
