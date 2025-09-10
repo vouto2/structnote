@@ -54,7 +54,7 @@ type Props = {
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
-export default async function MapPage({ params }: Props) {
+export default async function MapPage({ params }: any) {
   const supabase = await createClient();
   const mapData = await getMapData(supabase, params.mapId);
 
