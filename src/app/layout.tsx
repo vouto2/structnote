@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Inconsolata } from "next/font/google";
 import "./globals.css";
 
 // Import Shippori Mincho font
 import { Shippori_Mincho } from "next/font/google";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-geist-sans", // CSS variable name is kept for simplicity
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inconsolata = Inconsolata({
+  variable: "--font-geist-mono", // CSS variable name is kept for simplicity
   subsets: ["latin"],
 });
 
@@ -36,8 +36,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <head><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" /><link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700&display=swap" rel="stylesheet" /></head>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} antialiased`}>{children}</body>
+      <head />
+      <body className={`${inter.variable} ${inconsolata.variable} ${shipporiMincho.variable} antialiased`}>{children}</body>
     </html>
   );
 }
